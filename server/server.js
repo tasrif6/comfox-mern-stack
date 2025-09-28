@@ -8,6 +8,11 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from "./routes/productRoutes.js";
 import cors from 'cors';
 import path from "path";
+import { fileURLToPath } from 'url';
+
+// Configure __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // configure env
 dotenv.config();
@@ -15,43 +20,41 @@ dotenv.config();
 //database config
 connectDB();
 
-
 //rest object
 const app = express()
 
-//middlewares
-app.use(cors());
+//middlewares - CORS should be configured ONCE and FIRST
+app.use(cors({
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "https://your-frontend-domain.vercel.app"],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json())
 app.use(morgan('dev'))
-app.use(express.static(path.join(__dirname, './client/build')))
 
-//routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/category", categoryRoutes);
-app.use("/api/v1/product", productRoutes)
-
-//vercel get
+// Root route for health check
 app.get('/', (req,res) => {
     res.send({
+        message: "API is working",
         activeStatus: true,
         error: false,
     })
 })
 
-app.use(cors({
-    origin: "http://localhost:3000",
-    credentials: true
-  }));
+// API routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/category", categoryRoutes);
+app.use("/api/v1/product", productRoutes);
 
-//rest api
-app.use('*', function(req,res){
-    res.sendFile(path.join(__dirname, "./client/build/index.html"));
-});
+// For Vercel deployment, we need to export the app
+export default app;
 
-//PORT
-const PORT = process.env.PORT || 8080;
-
-//run listen
-app.listen(PORT, () => {
-    console.log(`Server Running on ${process.env.DEV_MODE} mode on port ${PORT}`.bgCyan.white);
-});
+// Only run the server locally (not on Vercel)
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 8080;
+    app.listen(PORT, () => {
+        console.log(`Server Running on ${process.env.DEV_MODE} mode on port ${PORT}`.bgCyan.white);
+    });
+}
