@@ -25,7 +25,7 @@ const app = express()
 
 //middlewares - CORS should be configured ONCE and FIRST
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "https://your-frontend-domain.vercel.app"],
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "https://your-frontend-domain.com"],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -43,18 +43,16 @@ app.get('/', (req,res) => {
     })
 })
 
-// API routes
+//API routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
 
-// For Vercel deployment, we need to export the app
-export default app;
+// Port configuration
+const PORT = process.env.PORT || 8080;
 
-// Only run the server locally (not on Vercel)
-if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 8080;
-    app.listen(PORT, () => {
-        console.log(`Server Running on ${process.env.DEV_MODE} mode on port ${PORT}`.bgCyan.white);
-    });
-}
+app.listen(PORT, () => {
+    console.log(`Server Running on port ${PORT}`.bgCyan.white);
+});
+
+export default app;
