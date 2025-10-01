@@ -8,6 +8,9 @@ import {useNavigate} from "react-router-dom";
 import { useCart } from "../context/cart.js";
 import { toast } from "react-hot-toast";
 
+// Set the base URL for all API calls
+const API_BASE_URL = "http://localhost:8080";
+
 const HomePage = () => {
   const navigate= useNavigate();
   const [cart, setCart] = useCart();
@@ -22,10 +25,12 @@ const HomePage = () => {
   //get Total Count
   const getTotal = async () => {
     try {
-      const { data } = await axios.get("/api/v1/product/product-count");
+      console.log("Fetching total count...");
+      const { data } = await axios.get(`${API_BASE_URL}/api/v1/product/product-count`);
+      console.log("Total count response:", data);
       setTotal(data?.total)
     } catch(error){
-      console.log(error)
+      console.log("Error fetching total count:", error)
     }
   };
 
@@ -33,13 +38,16 @@ const HomePage = () => {
     if (page === 1) return;
     loadMore();
   }, [page]);
+  
   //load more
   const loadMore = async () => {
     try {
-      const {data} = await axios.get(`/api/v1/product/product-list/${page}`);
+      console.log(`Loading more products for page ${page}...`);
+      const {data} = await axios.get(`${API_BASE_URL}/api/v1/product/product-list/${page}`);
+      console.log("Load more response:", data);
       setProducts([...products, ...data?.products]);
     } catch (error){
-      console.log(error)
+      console.log("Error loading more products:", error)
       setLoading(false)
     }
   }
@@ -47,29 +55,37 @@ const HomePage = () => {
   //get all category
   const getAllCategory = async () => {
     try {
-      const { data } = await axios.get("/api/v1/category/get-category");
+      console.log("Fetching categories...");
+      const { data } = await axios.get(`${API_BASE_URL}/api/v1/category/get-category`);
+      console.log("Categories response:", data);
       if (data?.success) {
         setCategories(data?.category);
+        console.log("Categories set:", data?.category);
       }
     } catch (error) {
-      console.log(error);
+      console.log("Error fetching categories:", error);
     }
   };
 
   useEffect(() => {
+    console.log("Component mounted, fetching initial data...");
     getAllCategory();
     getTotal();
   }, []);
+  
   //get products
   const getAllProducts = async () => {
     try {
+      console.log("Fetching all products...");
       setLoading(true);
-      const { data } = await axios.get(`/api/v1/product/product-list/${page}`);
+      const { data } = await axios.get(`${API_BASE_URL}/api/v1/product/product-list/${page}`);
+      console.log("Products response:", data);
       setLoading(false);
       setProducts(data.products);
+      console.log("Products set:", data.products);
     } catch (error) {
       setLoading(false);
-      console.log(error);
+      console.log("Error fetching products:", error);
     }
   };
 
@@ -82,9 +98,11 @@ const handleFilter = (value, id ) => {
     all = all.filter((c) => c !== id);
   }
   setChecked(all);
+  console.log("Filter changed - checked categories:", all);
   };
 
   useEffect(() => {
+    console.log("Filter effect - checked.length:", checked.length, "radio.length:", radio.length);
     if(!checked.length || !radio.length ) 
       getAllProducts();
   }, [checked.length, radio.length]);
@@ -95,32 +113,42 @@ const handleFilter = (value, id ) => {
   }, [checked, radio]);
 
 //get products by filter
-const filterProduct =async() => {
+const filterProduct = async() => {
   try {
-    const {data} = await axios.post('/api/v1/product/product-filters',{checked, radio})
+    console.log("Filtering products with:", {checked, radio});
+    const {data} = await axios.post(`${API_BASE_URL}/api/v1/product/product-filters`,{checked, radio})
+    console.log("Filtered products response:", data);
     setProducts(data?.products)
   } catch (error){
-    console.log(error)
+    console.log("Error filtering products:", error)
   }
 }
 
+// Add debug info to render
+console.log("Render - Products count:", products?.length, "Categories count:", categories?.length);
 return (
   <Layout title={"ComFox"}>
     <div className="container-fluid mt-4">
+      
+      
       <div className="row">
         {/* Sidebar Filters */}
         <div className="col-md-3 mb-4">
           <div className="p-3 shadow-sm rounded bg-light">
             <h4 className="text-center mb-3 fw-bold">Filter By Category</h4>
             <div className="d-flex flex-column gap-2">
-              {categories?.map((c) => (
-                <Checkbox
-                  key={c._id}
-                  onChange={(e) => handleFilter(e.target.checked, c._id)}
-                >
-                  {c.name}
-                </Checkbox>
-              ))}
+              {categories?.length > 0 ? (
+                categories.map((c) => (
+                  <Checkbox
+                    key={c._id}
+                    onChange={(e) => handleFilter(e.target.checked, c._id)}
+                  >
+                    {c.name}
+                  </Checkbox>
+                ))
+              ) : (
+                <p className="text-muted">No categories found</p>
+              )}
             </div>
 
             {/* Price Filter */}
@@ -149,19 +177,33 @@ return (
         {/* Product Grid */}
         <div className="col-md-9">
           <h2 className="text-center mb-4 fw-bold">Our Exclusive Collection</h2>        
+          
+          {loading && <p className="text-center">Loading products...</p>}
+          
+          {!loading && products?.length === 0 && (
+            <div className="alert alert-warning text-center">
+              <h4>No products found</h4>
+              <p>Check your backend server is running on port 8080</p>
+              <p>Try visiting: <a href="http://localhost:8080/api/v1/product/product-list/1" target="_blank" rel="noopener noreferrer">http://localhost:8080/api/v1/product/product-list/1</a></p>
+            </div>
+          )}
+          
           <div className="row g-4">
             {products?.map((p) => (
               <div key={p._id} className="col-md-4">
                 <div className="card h-100 shadow-sm border-0 rounded">
                   <img
-                    src={`/api/v1/product/product-photo/${p._id}`}
+                    src={`${API_BASE_URL}/api/v1/product/product-photo/${p._id}`}
                     className="card-img-top"
                     alt={p.name}
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
+                    }}
                   />
                   <div className="card-body d-flex flex-column">
                     <h5 className="card-title fw-semibold">{p.name}</h5>
                     <p className="card-text text-muted">
-                      {p.description.substring(0, 50)}...
+                      {p.description?.substring(0, 50)}...
                     </p>
                     <p className="card-text fw-bold text-success">
                       BDT. {p.price}

@@ -7,22 +7,23 @@ import {BrowserRouter} from 'react-router-dom';
 import {AuthProvider} from "./context/auth";
 import {SearchProvider} from "./context/search";
 import { CartProvider } from "./context/cart";
+// Updated Ant Design CSS import for newer versions
 import 'antd/dist/reset.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <AuthProvider>
-    <SearchProvider>
-      <CartProvider>
+  <React.StrictMode>
+    <AuthProvider>
+      <SearchProvider>
+        <CartProvider>
           <BrowserRouter>
             <App />
           </BrowserRouter>
-      </CartProvider>
-    </SearchProvider>
-  </AuthProvider>
+        </CartProvider>
+      </SearchProvider>
+    </AuthProvider>
+  </React.StrictMode>
 );
-
-
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
